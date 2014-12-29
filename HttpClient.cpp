@@ -1,4 +1,5 @@
 // STL Header
+#include <map>
 #include <vector>
 #include <fstream>
 #include <sstream>
@@ -306,9 +307,20 @@ bool HttpClient::GetHttpHeader( boost::asio::ip::tcp::iostream& rStream )
 	}
 
 	// Process the response headers, which are terminated by a blank line.
-	string header;
-	while( getline( rStream, header ) && header != "\r" )
-		m_sigInfoLog( header );
+	string sHeader;
+	map<string, string> mHeader;
+	while (getline(rStream, sHeader) && sHeader != "\r")
+	{
+		m_sigInfoLog(sHeader);
+		vector<string> vList;
+		boost::split(vList, sHeader, boost::is_any_of(":"), boost::token_compress_on);
+		if (vList.size() == 2)
+		{
+			boost::trim(vList[0]);
+			boost::trim(vList[1]);
+			mHeader.insert(pair<string, string>(vList[0], vList[1]));
+		}
+	}
 
 	return true;
 }
