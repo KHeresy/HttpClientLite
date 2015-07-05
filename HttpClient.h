@@ -101,5 +101,5 @@ protected:
 
 protected:
 	bool SendRequest( const std::string& rServer, const std::string& rPath, boost::asio::ip::tcp::iostream& rStream );
-	bool GetHttpHeader( boost::asio::ip::tcp::iostream& rStream );
+	size_t GetHttpHeader( boost::asio::ip::tcp::iostream& rStream );
 };

@@ -152,11 +152,14 @@ std::pair<size_t,wstring> HTMLParser::FindContentBetweenTag( const wstring& rHtm
 	if( uPos1 != wstring::npos )
 	{
 		size_t uPos2 = rHtml.find( rTag.second, uPos1 );
-		uPos1 = uPos1 + rTag.first.length();
+		if (uPos2 != wstring::npos)
+		{
+			uPos1 = uPos1 + rTag.first.length();
 
-		std::wstring sContent = rHtml.substr( uPos1, uPos2 - uPos1 );
-		boost::algorithm::trim( sContent );
-		return make_pair( uPos1, sContent );
+			std::wstring sContent = rHtml.substr(uPos1, uPos2 - uPos1);
+			boost::algorithm::trim(sContent);
+			return make_pair(uPos1, sContent);
+		}
 	}
 	return make_pair( wstring::npos, L"" );
 }
@@ -200,25 +203,29 @@ boost::optional<wstring> HttpClient::ReadHtml( const string& rServer, const stri
 {
 	// code reference to http://www.boost.org/doc/libs/1_53_0/doc/html/boost_asio/example/iostreams/http_client.cpp
 	tcp::iostream sStream;
-	sStream.expires_from_now( boost::posix_time::seconds( 60 ) );
-	if( SendRequest( rServer, rPath, sStream ) && GetHttpHeader( sStream ) )
+	sStream.expires_from_now( boost::posix_time::seconds( 300 ) );
+	if( SendRequest( rServer, rPath, sStream ) )
 	{
-		// Write the remaining data to output.
-		stringstream oStream;
-		oStream << sStream.rdbuf();
-		string sHtml = oStream.str();
-
-		string sEncoding = "ANSI";
-		size_t uPos = sHtml.find( "charset=" );
-		if( uPos != string::npos )
+		size_t uSize = GetHttpHeader(sStream);
+		if (uSize > 0)
 		{
-			auto uEnd = sHtml.find_first_of( "'\" ", uPos + 1 );
-			if( uEnd != string::npos )
+			// Write the remaining data to output.
+			stringstream oStream;
+			oStream << sStream.rdbuf();
+			string sHtml = oStream.str();
+
+			string sEncoding = "ANSI";
+			size_t uPos = sHtml.find("charset=");
+			if (uPos != string::npos)
 			{
-				sEncoding = sHtml.substr( uPos + 8, uEnd - uPos - 8 );
+				auto uEnd = sHtml.find_first_of("'\" ", uPos + 1);
+				if (uEnd != string::npos)
+				{
+					sEncoding = sHtml.substr(uPos + 8, uEnd - uPos - 8);
+				}
 			}
+			return boost::locale::conv::to_utf<wchar_t>(sHtml, sEncoding);
 		}
-		return boost::locale::conv::to_utf<wchar_t>( sHtml, sEncoding );
 	}
 	return boost::optional<wstring>();
 }
@@ -227,16 +234,20 @@ bool HttpClient::GetBinaryFile( const string& rServer, const string& rPath, cons
 {
 	// code reference to http://www.boost.org/doc/libs/1_53_0/doc/html/boost_asio/example/iostreams/http_client.cpp
 	tcp::iostream sStream;
-	sStream.expires_from_now( boost::posix_time::seconds( 60 ) );
-	if( SendRequest( rServer, rPath, sStream ) && GetHttpHeader( sStream ) )
+	sStream.expires_from_now( boost::posix_time::seconds( 300 ) );
+	if( SendRequest( rServer, rPath, sStream ) )
 	{
-		std::ofstream outfile( rFilename, ios::binary );
-		if( outfile.is_open() )
+		size_t uSize = GetHttpHeader(sStream);
+		if (uSize > 0)
 		{
-			auto buf = sStream.rdbuf();
-			outfile << buf;
-			outfile.close();
-			return true;
+			std::ofstream outfile(rFilename, ios::binary);
+			if (outfile.is_open())
+			{
+				auto buf = sStream.rdbuf();
+				outfile << buf;
+				outfile.close();
+				return true;
+			}
 		}
 	}
 	return false;
@@ -285,7 +296,7 @@ bool HttpClient::SendRequest( const string& rServer, const string& rPath, boost:
 	return true;
 }
 
-bool HttpClient::GetHttpHeader( boost::asio::ip::tcp::iostream& rStream )
+size_t HttpClient::GetHttpHeader( boost::asio::ip::tcp::iostream& rStream )
 {
 	// Check that response is OK.
 	string sHttpVersion;
@@ -298,17 +309,18 @@ bool HttpClient::GetHttpHeader( boost::asio::ip::tcp::iostream& rStream )
 	if( !rStream || sHttpVersion.substr(0, 5) != "HTTP/" )
 	{
 		m_sigErrorLog( "Invalid response" );
-		return false;
+		return 0;
 	}
 	if( uCode != 200 )
 	{
 		m_sigErrorLog( "Response returned with status code " + uCode );
-		return false;
+		return 0;
 	}
 
 	// Process the response headers, which are terminated by a blank line.
 	string sHeader;
 	map<string, string> mHeader;
+	size_t uSize = 1;
 	while (getline(rStream, sHeader) && sHeader != "\r")
 	{
 		m_sigInfoLog(sHeader);
@@ -319,8 +331,11 @@ bool HttpClient::GetHttpHeader( boost::asio::ip::tcp::iostream& rStream )
 			boost::trim(vList[0]);
 			boost::trim(vList[1]);
 			mHeader.insert(pair<string, string>(vList[0], vList[1]));
+
+			if (vList[0] == "Content-Length")
+				uSize = std::atoi(vList[1].c_str());
 		}
 	}
 
-	return true;
+	return uSize;
 }
