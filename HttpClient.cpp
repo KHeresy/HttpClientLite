@@ -311,31 +311,55 @@ size_t HttpClient::GetHttpHeader( boost::asio::ip::tcp::iostream& rStream )
 		m_sigErrorLog( "Invalid response" );
 		return 0;
 	}
-	if( uCode != 200 )
+
+	if (uCode == 200 || uCode == 301 || uCode == 302)
+	{
+		// Process the response headers, which are terminated by a blank line.
+		string sHeader;
+		map<string, string> mHeader;
+		size_t uSize = 1;
+		while (getline(rStream, sHeader) && sHeader != "\r")
+		{
+			m_sigInfoLog(sHeader);
+			size_t uPos = sHeader.find_first_of(':');
+			if (uPos != string::npos)
+			{
+				string sKey = sHeader.substr(0, uPos);
+				string sValue = sHeader.substr(uPos + 1);
+				boost::trim(sKey);
+				boost::trim(sValue);
+				mHeader.insert(std::make_pair(sKey, sValue));
+
+				if (sKey == "Content-Length")
+					uSize = std::atoi(sValue.c_str());
+			}
+		}
+
+		if (uCode == 301 || uCode == 302)
+		{
+			string sNewURL = mHeader["Location"];
+			if (sNewURL == "")
+				sNewURL = mHeader["location"];
+
+			if (sNewURL != "")
+			{
+				auto mURL = ParseURL(sNewURL);
+				if (mURL)
+				{
+					rStream.close();
+					if (SendRequest(mURL->first, mURL->second, rStream))
+						return GetHttpHeader(rStream);
+				}
+			}
+
+			return 0;
+		}
+		return uSize;
+	}
+	else
 	{
 		m_sigErrorLog( "Response returned with status code " + uCode );
 		return 0;
 	}
 
-	// Process the response headers, which are terminated by a blank line.
-	string sHeader;
-	map<string, string> mHeader;
-	size_t uSize = 1;
-	while (getline(rStream, sHeader) && sHeader != "\r")
-	{
-		m_sigInfoLog(sHeader);
-		vector<string> vList;
-		boost::split(vList, sHeader, boost::is_any_of(":"), boost::token_compress_on);
-		if (vList.size() == 2)
-		{
-			boost::trim(vList[0]);
-			boost::trim(vList[1]);
-			mHeader.insert(pair<string, string>(vList[0], vList[1]));
-
-			if (vList[0] == "Content-Length")
-				uSize = std::atoi(vList[1].c_str());
-		}
-	}
-
-	return uSize;
 }
