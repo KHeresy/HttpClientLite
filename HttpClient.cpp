@@ -1,4 +1,5 @@
 // STL Header
+#include <chrono>
 #include <map>
 #include <vector>
 #include <fstream>
@@ -203,7 +204,7 @@ boost::optional<wstring> HttpClient::ReadHtml( const string& rServer, const stri
 {
 	// code reference to http://www.boost.org/doc/libs/1_53_0/doc/html/boost_asio/example/iostreams/http_client.cpp
 	tcp::iostream sStream;
-	sStream.expires_from_now( boost::posix_time::seconds( 300 ) );
+	sStream.expires_from_now( std::chrono::seconds( 300 ) );
 	if( SendRequest( rServer, rPath, sStream ) )
 	{
 		size_t uSize = GetHttpHeader(sStream);
@@ -234,7 +235,7 @@ bool HttpClient::GetBinaryFile( const string& rServer, const string& rPath, cons
 {
 	// code reference to http://www.boost.org/doc/libs/1_53_0/doc/html/boost_asio/example/iostreams/http_client.cpp
 	tcp::iostream sStream;
-	sStream.expires_from_now( boost::posix_time::seconds( 300 ) );
+	sStream.expires_from_now(std::chrono::seconds( 300 ) );
 	if( SendRequest( rServer, rPath, sStream ) )
 	{
 		size_t uSize = GetHttpHeader(sStream);
