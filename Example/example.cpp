@@ -15,7 +15,7 @@ int main(int argc, char** argv )
 		std::cout << "[Error] " << sError << std::endl;
 	});
 
-	boost::optional<std::wstring> bHtml = mClient.ReadHtml( argv[1] );
+	std::optional<std::wstring> bHtml = mClient.ReadHtml( argv[1] );
 	if (bHtml)
 	{
 		std::wcout << bHtml.value();

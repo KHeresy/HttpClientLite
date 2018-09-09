@@ -16,7 +16,7 @@ using namespace std;
 using namespace boost::asio::ip;
 
 // Functions of HTNLTag
-boost::optional< pair<size_t,size_t> > HTMLTag::GetData( const std::string& sHtmlSource, size_t uBeginPos )
+std::optional< pair<size_t,size_t> > HTMLTag::GetData( const std::string& sHtmlSource, size_t uBeginPos )
 {
 	if( m_sTagName != "" )
 	{
@@ -94,10 +94,10 @@ boost::optional< pair<size_t,size_t> > HTMLTag::GetData( const std::string& sHtm
 			}
 		}
 	}
-	return boost::optional< std::pair<size_t,size_t> >();
+	return std::optional< std::pair<size_t,size_t> >();
 }
 
-boost::optional< std::pair<size_t,size_t> > HTMLTag::FindQuoteContent( const std::string& rSource, const char c, size_t uBeginPos )
+std::optional< std::pair<size_t,size_t> > HTMLTag::FindQuoteContent( const std::string& rSource, const char c, size_t uBeginPos )
 {
 	size_t uPos = rSource.find_first_of( "\'\"", uBeginPos );
 	if( uPos != string::npos )
@@ -106,11 +106,11 @@ boost::optional< std::pair<size_t,size_t> > HTMLTag::FindQuoteContent( const std
 		{
 		}
 	}
-	return boost::optional< pair<size_t,size_t> >();
+	return std::optional< pair<size_t,size_t> >();
 }
 
 // Functions of HTMLParsr
-void HTMLParser::FindTag( const std::wstring& rHtml, const std::wstring& rTag, const std::map< std::wstring, boost::optional<std::wstring> >& rAttribute, size_t uStartPos )
+void HTMLParser::FindTag( const std::wstring& rHtml, const std::wstring& rTag, const std::map< std::wstring, std::optional<std::wstring> >& rAttribute, size_t uStartPos )
 {
 	std::wstring	sTagBegin	= L"<" + rTag,
 					sTagEnd		= L"</" + rTag + L">";
@@ -165,7 +165,7 @@ std::pair<size_t,wstring> HTMLParser::FindContentBetweenTag( const wstring& rHtm
 	return make_pair( wstring::npos, L"" );
 }
 
-boost::optional< pair<wstring,wstring> > HTMLParser::AnalyzeLink( const wstring& rHtml, size_t uStartPos )
+std::optional< pair<wstring,wstring> > HTMLParser::AnalyzeLink( const wstring& rHtml, size_t uStartPos )
 {
 	size_t uPos1 = rHtml.find( L"<a ", uStartPos );
 	if( uPos1 != wstring::npos )
@@ -187,12 +187,12 @@ boost::optional< pair<wstring,wstring> > HTMLParser::AnalyzeLink( const wstring&
 					wstring sLinkText = rHtml.substr( uPos1, uPos2 - uPos1 );
 					boost::algorithm::trim( sLinkText );
 
-					return boost::optional< pair<wstring,wstring> >( make_pair( sLinkText, sLinkUrl ) );
+					return std::optional< pair<wstring,wstring> >( make_pair( sLinkText, sLinkUrl ) );
 				}
 			}
 		}
 	}
-	return boost::optional< pair<wstring,wstring> >();
+	return std::optional< pair<wstring,wstring> >();
 }
 
 // Functions of HttpClient
@@ -200,7 +200,7 @@ HttpClient::HttpClient() : m_Resolver( m_IO_service )
 {
 }
 
-boost::optional<wstring> HttpClient::ReadHtml( const string& rServer, const string& rPath )
+std::optional<wstring> HttpClient::ReadHtml( const string& rServer, const string& rPath )
 {
 	// code reference to http://www.boost.org/doc/libs/1_53_0/doc/html/boost_asio/example/iostreams/http_client.cpp
 	tcp::iostream sStream;
@@ -228,7 +228,7 @@ boost::optional<wstring> HttpClient::ReadHtml( const string& rServer, const stri
 			return boost::locale::conv::to_utf<wchar_t>(sHtml, sEncoding);
 		}
 	}
-	return boost::optional<wstring>();
+	return std::optional<wstring>();
 }
 
 bool HttpClient::GetBinaryFile( const string& rServer, const string& rPath, const wstring& rFilename )
@@ -254,26 +254,26 @@ bool HttpClient::GetBinaryFile( const string& rServer, const string& rPath, cons
 	return false;
 }
 
-boost::optional< pair<string,string> > HttpClient::ParseURL( const string& sURL )
+std::optional< pair<string,string> > HttpClient::ParseURL( const string& sURL )
 {
 	if( sURL.length() > 10 )
 	{
 		if( sURL.substr( 0, 7 ) == "http://" )
 		{
 			auto uPos = sURL.find_first_of( "/", 8 );
-			return boost::optional< pair<string,string> >( make_pair( sURL.substr( 7, uPos - 7 ), sURL.substr( uPos ) ) );
+			return std::optional< pair<string,string> >( make_pair( sURL.substr( 7, uPos - 7 ), sURL.substr( uPos ) ) );
 		}
 	}
-	return boost::optional< pair<string,string> >();
+	return std::optional< pair<string,string> >();
 }
 
-boost::optional<std::string> HttpClient::GetFilename( const std::string& sURL )
+std::optional<std::string> HttpClient::GetFilename( const std::string& sURL )
 {
 	size_t uPos = sURL.find_last_of( '/' );
 	if( uPos != string::npos && uPos != sURL.size() - 1 )
 		return sURL.substr( uPos + 1 );
 
-	return boost::optional<string>();
+	return std::optional<string>();
 }
 
 bool HttpClient::SendRequest( const string& rServer, const string& rPath, boost::asio::ip::tcp::iostream& rStream )

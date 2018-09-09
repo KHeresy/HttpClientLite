@@ -3,10 +3,10 @@
 // STL Header
 #include <map>
 #include <string>
+#include <optional>
 
 // Boost Header
 #include <boost/asio.hpp>
-#include <boost/optional.hpp>
 #include <boost/signals2.hpp>
 
 /**
@@ -15,9 +15,9 @@
 class HTMLTag
 {
 public:
-	std::string													m_sTagName;
-	boost::optional<std::string>								m_sContent;
-	std::map< std::string,boost::optional<std::string> >	m_mAttributes;
+	std::string											m_sTagName;
+	std::optional<std::string>							m_sContent;
+	std::map< std::string, std::optional<std::string> >	m_mAttributes;
 
 public:
 	HTMLTag( const std::string& sTagName )
@@ -31,33 +31,33 @@ public:
 		GetData( sHtmlSource, uBeginPos );
 	}
 
-	boost::optional< std::pair<size_t,size_t> > GetData( const std::string& sHtmlSource, size_t uBeginPos = 0 );
+	std::optional< std::pair<size_t,size_t> > GetData( const std::string& sHtmlSource, size_t uBeginPos = 0 );
 
-	boost::optional< std::pair<size_t,size_t> > FindQuoteContent( const std::string& rSourze, const char c, size_t uBeginPos = 0 );
+	std::optional< std::pair<size_t,size_t> > FindQuoteContent( const std::string& rSourze, const char c, size_t uBeginPos = 0 );
 
 public:
-	static boost::optional< std::pair< HTMLTag, std::pair<size_t,size_t> > > Construct( const std::string& sTagName, std::string& sHtmlSource, size_t uBeginPos = 0 )
+	static std::optional< std::pair< HTMLTag, std::pair<size_t,size_t> > > Construct( const std::string& sTagName, std::string& sHtmlSource, size_t uBeginPos = 0 )
 	{
 		HTMLTag mTag( sTagName );
-		boost::optional< std::pair<size_t,size_t> > pInfo = mTag.GetData( sHtmlSource, uBeginPos );
+		std::optional< std::pair<size_t,size_t> > pInfo = mTag.GetData( sHtmlSource, uBeginPos );
 		if( pInfo )
-			return make_pair( mTag, *pInfo );
+			return std::make_pair( mTag, *pInfo );
 
-		return boost::optional< std::pair< HTMLTag, std::pair<size_t,size_t> > >();
+		return std::optional< std::pair< HTMLTag, std::pair<size_t,size_t> > >();
 	}
 };
 
 class HTMLParser
 {
 public:
-	typedef std::map< std::wstring, boost::optional<std::wstring> >	TAttributes;
+	typedef std::map< std::wstring, std::optional<std::wstring> >	TAttributes;
 
 public:
-	static void FindTag( const std::wstring& rHtml, const std::wstring& rTag, const std::map< std::wstring, boost::optional<std::wstring> >& rAttribute, size_t uStartPos = 0 );
+	static void FindTag( const std::wstring& rHtml, const std::wstring& rTag, const std::map< std::wstring, std::optional<std::wstring> >& rAttribute, size_t uStartPos = 0 );
 
 	static std::pair<size_t,std::wstring> FindContentBetweenTag( const std::wstring& rHtml, const std::pair<std::wstring,std::wstring>& rTag, size_t uStartPos = 0 );
 
-	static boost::optional< std::pair<std::wstring,std::wstring> > AnalyzeLink( const std::wstring& rHtml, size_t uStartPos = 0 );
+	static std::optional< std::pair<std::wstring,std::wstring> > AnalyzeLink( const std::wstring& rHtml, size_t uStartPos = 0 );
 };
 
 class HttpClient
@@ -69,15 +69,15 @@ public:
 public:
 	HttpClient();
 
-	boost::optional<std::wstring> ReadHtml( const std::string& rServer, const std::string& rPath );
+	std::optional<std::wstring> ReadHtml( const std::string& rServer, const std::string& rPath );
 
-	boost::optional<std::wstring> ReadHtml( const std::string& sURL )
+	std::optional<std::wstring> ReadHtml( const std::string& sURL )
 	{
 		auto pLink = ParseURL( sURL );
 		if( pLink )
 			return ReadHtml( pLink->first, pLink->second );
 
-		return boost::optional<std::wstring>();
+		return std::optional<std::wstring>();
 	}
 
 	bool GetBinaryFile( const std::string& rServer, const std::string& rPath, const std::wstring& rFilename );
@@ -92,8 +92,8 @@ public:
 	}
 
 public:
-	static boost::optional< std::pair<std::string,std::string> > ParseURL( const std::string& sURL );
-	static boost::optional< std::string > GetFilename( const std::string& sURL );
+	static std::optional< std::pair<std::string,std::string> > ParseURL( const std::string& sURL );
+	static std::optional< std::string > GetFilename( const std::string& sURL );
 
 protected:
 	boost::asio::io_service			m_IO_service;
