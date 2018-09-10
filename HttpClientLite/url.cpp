@@ -28,7 +28,7 @@ static bool isSpecialPort(const std::string& sProtocol, const uint16_t& uPort)
 
 std::string HttpClientLite::URL::toString() const
 {
-	if (!static_cast<bool>(*this))
+	if (!isValid())
 		return "";
 
 	// Protocol
@@ -148,5 +148,5 @@ bool HttpClientLite::URL::fromString(const std::string & sInput)
 		}
 	}
 
-	return static_cast<bool>(*this);
+	return isValid();
 }

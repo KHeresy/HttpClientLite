@@ -30,7 +30,7 @@ namespace HttpClientLite {
 
 		operator bool() const
 		{
-			return m_sDomain != "";
+			isValid();
 		}
 
 		operator std::string() const
@@ -46,6 +46,11 @@ namespace HttpClientLite {
 			m_sPath = "/";
 			m_mLoginInfo.reset();
 			m_vGetData.clear();
+		}
+
+		bool isValid() const
+		{
+			return m_sDomain != "";
 		}
 
 		std::string toString() const;
