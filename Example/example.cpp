@@ -10,18 +10,24 @@ int main(int argc, char** argv )
 		return -1;
 	}
 
-	HttpClient	mClient;
-	mClient.m_sigErrorLog.connect([](const std::string& sError) {
-		std::cout << "[Error] " << sError << std::endl;
-	});
+	HttpClientLite::URL mUrl(argv[1]);
+	if (mUrl)
+	{
+		std::cout << "Try to open <" << mUrl.toString() << std::endl;
 
-	std::optional<std::wstring> bHtml = mClient.ReadHtml( argv[1] );
-	if (bHtml)
-	{
-		std::wcout << bHtml.value();
-	}
-	else
-	{
-		std::cout << "Error" << std::endl;
+		HttpClientLite::HttpClient	mClient;
+		mClient.m_sigErrorLog.connect([](const std::string& sError) {
+			std::cout << "[Error] " << sError << std::endl;
+		});
+
+		std::optional<std::wstring> bHtml = mClient.ReadHtml(argv[1]);
+		if (bHtml)
+		{
+			std::wcout << bHtml.value();
+		}
+		else
+		{
+			std::cout << "Error" << std::endl;
+		}
 	}
 }

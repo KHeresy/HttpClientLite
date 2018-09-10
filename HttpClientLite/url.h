@@ -30,7 +30,7 @@ namespace HttpClientLite {
 
 		operator bool() const
 		{
-			isValid();
+			return isValid();
 		}
 
 		operator std::string() const
