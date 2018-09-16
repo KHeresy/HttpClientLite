@@ -47,7 +47,7 @@ std::string HttpClientLite::URL::toString() const
 	}
 
 	// domain
-	sUrl += m_sDomain;
+	sUrl += m_sHost;
 
 	// port
 	if (isSpecialPort(m_sProtocol, m_uPort))
@@ -118,7 +118,7 @@ bool HttpClientLite::URL::fromString(const std::string & sInput)
 			}
 		}
 
-		m_sDomain = sDomain;
+		m_sHost = sDomain;
 	}
 
 	// path

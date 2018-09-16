@@ -10,7 +10,7 @@ namespace HttpClientLite {
 	{
 	public:
 		std::string m_sProtocol;
-		std::string m_sDomain;
+		std::string m_sHost;
 		uint16_t	m_uPort;
 		std::string m_sPath;
 
@@ -41,7 +41,7 @@ namespace HttpClientLite {
 		void reset()
 		{
 			m_sProtocol = "http";
-			m_sDomain = "";
+			m_sHost = "";
 			m_uPort = 80;
 			m_sPath = "/";
 			m_mLoginInfo.reset();
@@ -50,7 +50,7 @@ namespace HttpClientLite {
 
 		bool isValid() const
 		{
-			return m_sDomain != "";
+			return m_sHost != "";
 		}
 
 		std::string toString() const;
