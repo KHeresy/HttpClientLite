@@ -1,5 +1,7 @@
 #include "url.h"
 
+#include <filesystem>
+
 #include <boost/tokenizer.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -25,6 +27,24 @@ static bool isSpecialPort(const std::string& sProtocol, const uint16_t& uPort)
 	return (getPort(sProtocol) != uPort);
 }
 #pragma endregion
+
+std::string HttpClientLite::URL::getTarget() const
+{
+	std::string sTarget = m_sPath;
+	if (m_vGetData.size() > 0)
+	{
+		sTarget += ("?" + m_vGetData[0].first + "=" + m_vGetData[0].second);
+
+		for (int i = 1; i < m_vGetData.size(); ++i)
+			sTarget += ("&" + m_vGetData[i].first + "=" + m_vGetData[i].second);
+	}
+	return sTarget;
+}
+
+std::string HttpClientLite::URL::getFilename() const
+{
+	return std::filesystem::path(m_sPath).filename().string();
+}
 
 std::string HttpClientLite::URL::toString() const
 {
@@ -54,16 +74,7 @@ std::string HttpClientLite::URL::toString() const
 		sUrl += ":" + std::to_string(m_uPort);
 
 	// path
-	sUrl += m_sPath;
-
-	// GET data
-	if (m_vGetData.size() > 0)
-	{
-		sUrl += ( "?" + m_vGetData[0].first + "=" + m_vGetData[0].second);
-
-		for( int i = 1; i < m_vGetData.size(); ++ i)
-			sUrl += ( "&" + m_vGetData[i].first + "=" + m_vGetData[i].second);
-	}
+	sUrl += getTarget();
 
 	return sUrl;
 }

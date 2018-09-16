@@ -53,6 +53,9 @@ namespace HttpClientLite {
 			return m_sHost != "";
 		}
 
+		std::string getTarget() const;
+		std::string getFilename() const;
+
 		std::string toString() const;
 		bool fromString(const std::string& sInput);
 	};
