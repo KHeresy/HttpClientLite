@@ -7,12 +7,15 @@
 
 // Boost Header
 #include <boost/asio.hpp>
+#include <boost/asio/ssl/context.hpp>
 #include <boost/signals2.hpp>
+#include <boost/beast/http/message.hpp>
+#include <boost/beast/http/string_body.hpp>
 
 #include "url.h"
 
-namespace HttpClientLite {
-
+namespace HttpClientLite
+{
 	/**
 	 * Class to save all information about a HTML set
 	 */
@@ -64,48 +67,39 @@ namespace HttpClientLite {
 		static std::optional< std::pair<std::wstring, std::wstring> > AnalyzeLink(const std::wstring& rHtml, size_t uStartPos = 0);
 	};
 
-	class HttpClient
+	class Session
+	{
+	public:
+		using THttpResponse = boost::beast::http::response<boost::beast::http::string_body>;
+
+	public:
+		virtual bool Connect(const URL& rURL) = 0;
+		virtual bool Request() = 0; //TODO: need to modify request
+		virtual THttpResponse Read() = 0;
+		virtual void Close() = 0;
+
+	public:
+		static std::optional<std::wstring> GetBody(const THttpResponse& rResponse);
+	};
+
+	class Client
 	{
 	public:
 		boost::signals2::signal<void(const std::string&)>	m_sigErrorLog;
 		boost::signals2::signal<void(const std::string&)>	m_sigInfoLog;
 
 	public:
-		HttpClient();
+		Client();
 
-		std::optional<std::wstring> ReadHtml(const std::string& rServer, const std::string& rPath);
-
-		std::optional<std::wstring> ReadHtml(const std::string& sURL)
-		{
-			auto pLink = ParseURL(sURL);
-			if (pLink)
-				return ReadHtml(pLink->first, pLink->second);
-
-			return std::optional<std::wstring>();
-		}
-
-		bool GetBinaryFile(const std::string& rServer, const std::string& rPath, const std::wstring& rFilename);
-
-		bool GetBinaryFile(const std::string& sURL, const std::wstring& rFilename)
-		{
-			auto pLink = ParseURL(sURL);
-			if (pLink)
-				return GetBinaryFile(pLink->first, pLink->second, rFilename);
-
-			return false;
-		}
-
-	public:
-		static std::optional< std::pair<std::string, std::string> > ParseURL(const std::string& sURL);
-		static std::optional< std::string > GetFilename(const std::string& sURL);
+		std::shared_ptr<Session> Connect(const URL& rURL);
 
 	protected:
-		boost::asio::io_service			m_IO_service;
-		boost::asio::ip::tcp::resolver	m_Resolver;
+		std::optional<std::wstring> ReadHtml_Http(const URL& rURL);
+		std::optional<std::wstring> ReadHtml_Https(const URL& rURL);
 
 	protected:
-		bool SendRequest(const std::string& rServer, const std::string& rPath, boost::asio::ip::tcp::iostream& rStream);
-		size_t GetHttpHeader(boost::asio::ip::tcp::iostream& rStream);
+		boost::asio::io_context		m_ctxAaio;
+		boost::asio::ssl::context	m_ctxSSL;
+		int							m_iHttpVersion = 11;
 	};
-
 }
