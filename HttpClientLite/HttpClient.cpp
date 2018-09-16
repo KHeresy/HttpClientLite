@@ -42,7 +42,7 @@ namespace HttpClientLite
 				namespace http = boost::beast::http;    // from <boost/beast/http.hpp>
 
 				// Set up an HTTP GET request message
-				http::request<http::string_body> mRequest{ http::verb::get, m_Url.m_sPath, m_iHttpVersion };
+				http::request<http::string_body> mRequest{ http::verb::get, m_Url.getTarget(), m_iHttpVersion };
 				mRequest.set(http::field::host, m_Url.m_sHost);
 				mRequest.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
@@ -174,12 +174,12 @@ namespace HttpClientLite
 		}
 	};
 
-	std::optional<std::wstring> Session::GetBody(const THttpResponse & rResponse)
+	std::optional<std::wstring> Session::GetBody(const THttpResponse & rResponse, const std::string sDefaultCodePage)
 	{
 		std::string sContent = rResponse.body();
 		if (sContent.size() > 0)
 		{
-			std::string sEncoding = "BIG5";
+			std::string sEncoding = sDefaultCodePage;
 			size_t uPos = sContent.find("charset=");
 			if (uPos != std::string::npos)
 			{
@@ -197,6 +197,19 @@ namespace HttpClientLite
 		}
 
 		return std::optional<std::wstring>();
+	}
+
+	bool Session::SaveBinaryFile(const THttpResponse & rResponse, const std::string & sFilename)
+	{
+		std::ofstream sFile(sFilename, std::ios::binary);
+		if (sFile.is_open())
+		{
+			auto& rData = rResponse.body();
+			sFile.write(rData.data(), rData.size());
+			sFile.close();
+			return true;
+		}
+		return false;
 	}
 }
 
@@ -593,7 +606,7 @@ std::optional<std::wstring> HttpClientLite::Client::ReadHtml_Http(const URL & rU
 		boost::asio::connect(mSocket, results.begin(), results.end());
 
 		// Set up an HTTP GET request message
-		http::request<http::string_body> req{ http::verb::get, rURL.m_sPath, m_iHttpVersion };
+		http::request<http::string_body> req{ http::verb::get, rURL.getTarget(), m_iHttpVersion };
 		req.set(http::field::host, rURL.m_sHost);
 		req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
@@ -669,7 +682,7 @@ std::optional<std::wstring> HttpClientLite::Client::ReadHtml_Https(const URL & r
 		stream.handshake(ssl::stream_base::client);
 
 		// Set up an HTTP GET request message
-		http::request<http::string_body> req{ http::verb::get, rURL.m_sPath, m_iHttpVersion };
+		http::request<http::string_body> req{ http::verb::get, rURL.getTarget(), m_iHttpVersion };
 		req.set(http::field::host, rURL.m_sHost);
 		req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 

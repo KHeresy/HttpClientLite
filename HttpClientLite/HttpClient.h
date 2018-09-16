@@ -79,7 +79,8 @@ namespace HttpClientLite
 		virtual void Close() = 0;
 
 	public:
-		static std::optional<std::wstring> GetBody(const THttpResponse& rResponse);
+		static std::optional<std::wstring> GetBody(const THttpResponse& rResponse, const std::string sDefaultCodePage = "us-ascii");
+		static bool SaveBinaryFile(const THttpResponse& rResponse, const std::string& sFilename);
 	};
 
 	class Client
