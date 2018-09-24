@@ -418,16 +418,10 @@ std::shared_ptr<Session> HttpClientLite::Client::Connect(const URL& rURL)
 
 std::optional<std::wstring> HttpClientLite::Client::ReadHtml(const URL & rURL, const std::string sDefaultCodePage)
 {
-	auto pSession = Connect(rURL);
-	if (pSession->Request())
+	auto Resp = ReadWithAuroRedirect(rURL);
+	if (Resp.result_int() == 200)
 	{
-		auto res = pSession->Read();
-		if (res.result_int() / 100 == 3 ) // 300 redirect
-			return ReadHtml(URL(res[boost::beast::http::field::location].to_string()), sDefaultCodePage);
-		else if(res.result_int() == 200)
-			return pSession->GetBody(res, sDefaultCodePage);
-
-		pSession->Close();
+		return Session::GetBody(Resp, sDefaultCodePage);
 	}
 
 	return std::optional<std::wstring>();
@@ -435,6 +429,18 @@ std::optional<std::wstring> HttpClientLite::Client::ReadHtml(const URL & rURL, c
 
 bool HttpClientLite::Client::GetBinaryFile(const URL & rURL, const std::wstring & sFilename)
 {
+	auto Resp = ReadWithAuroRedirect(rURL);
+	auto sContent = Resp.body();
+	if (sContent.size() > 0)
+	{
+		std::ofstream fsFile(sFilename, std::ios_base::binary);
+		if (fsFile.is_open())
+		{
+			fsFile.write(sContent.data(), sContent.size() );
+			fsFile.close();
+			return true;
+		}
+	}
 	return false;
 }
 
