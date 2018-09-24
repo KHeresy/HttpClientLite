@@ -8,13 +8,6 @@
 // Boost Header
 #include <boost/algorithm/string.hpp>
 #include <boost/locale.hpp>
-
-// Application Header
-#include "HttpClient.h"
-
-//
-#include "root_certificates.hpp"
-
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
@@ -22,9 +15,10 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/error.hpp>
 #include <boost/asio/ssl/stream.hpp>
-#include <cstdlib>
-#include <iostream>
-#include <string>
+
+// Application Header
+#include "HttpClient.h"
+#include "root_certificates.hpp"
 
 namespace HttpClientLite
 {
@@ -186,11 +180,14 @@ namespace HttpClientLite
 				auto uEnd = sContent.find_first_of("'\" ", uPos + 9);
 				if (uEnd != std::string::npos)
 				{
+					sEncoding = sContent.substr(uPos, 20);
 					sEncoding = sContent.substr(uPos + 8, uEnd - uPos - 7);
 					if (sEncoding[0] == '\"' || sEncoding[0] == '\'')
-					{
-						sEncoding = sEncoding.substr(1, sEncoding.size() - 2);
-					}
+						sEncoding = sEncoding.substr(1);
+
+					uPos = sEncoding.find_first_of("'\"");
+					if (uPos != std::string::npos)
+						sEncoding = sEncoding.substr(0, uPos);
 				}
 			}
 			return boost::locale::conv::to_utf<wchar_t>(sContent, sEncoding);
@@ -397,175 +394,6 @@ std::optional< std::pair<std::wstring, std::wstring> > HTMLParser::AnalyzeLink(c
 }
 #pragma endregion
 
-#pragma region Functions of HttpClient
-//HttpClient::HttpClient() : m_Resolver(m_IO_service){}
-//
-//std::optional<std::wstring> HttpClient::ReadHtml(const std::string& rServer, const std::string& rPath)
-//{
-//	// code reference to http://www.boost.org/doc/libs/1_53_0/doc/html/boost_asio/example/iostreams/http_client.cpp
-//	boost::asio::ip::tcp::iostream sStream;
-//	sStream.expires_from_now(std::chrono::seconds(300));
-//	if (SendRequest(rServer, rPath, sStream))
-//	{
-//		size_t uSize = GetHttpHeader(sStream);
-//		if (uSize > 0)
-//		{
-//			// Write the remaining data to output.
-//			std::stringstream oStream;
-//			oStream << sStream.rdbuf();
-//			std::string sHtml = oStream.str();
-//
-//			std::string sEncoding = "ANSI";
-//			size_t uPos = sHtml.find("charset=");
-//			if (uPos != std::string::npos)
-//			{
-//				auto uEnd = sHtml.find_first_of("'\" ", uPos + 1);
-//				if (uEnd != std::string::npos)
-//				{
-//					sEncoding = sHtml.substr(uPos + 8, uEnd - uPos - 8);
-//				}
-//			}
-//			return boost::locale::conv::to_utf<wchar_t>(sHtml, sEncoding);
-//		}
-//	}
-//	return std::optional<std::wstring>();
-//}
-//
-//bool HttpClient::GetBinaryFile(const std::string& rServer, const std::string& rPath, const std::wstring& rFilename)
-//{
-//	// code reference to http://www.boost.org/doc/libs/1_53_0/doc/html/boost_asio/example/iostreams/http_client.cpp
-//	boost::asio::ip::tcp::iostream sStream;
-//	sStream.expires_from_now(std::chrono::seconds(300));
-//	if (SendRequest(rServer, rPath, sStream))
-//	{
-//		size_t uSize = GetHttpHeader(sStream);
-//		if (uSize > 0)
-//		{
-//			std::ofstream outfile(rFilename, std::ios::binary);
-//			if (outfile.is_open())
-//			{
-//				auto buf = sStream.rdbuf();
-//				outfile << buf;
-//				outfile.close();
-//				return true;
-//			}
-//		}
-//	}
-//	return false;
-//}
-//
-//std::optional< std::pair<std::string, std::string> > HttpClient::ParseURL(const std::string& sURL)
-//{
-//	if (sURL.length() > 10)
-//	{
-//		if (sURL.substr(0, 7) == "http://")
-//		{
-//			auto uPos = sURL.find_first_of("/", 8);
-//			return std::optional< std::pair<std::string, std::string> >(make_pair(sURL.substr(7, uPos - 7), sURL.substr(uPos)));
-//		}
-//	}
-//	return std::optional< std::pair<std::string, std::string> >();
-//}
-//
-//std::optional<std::string> HttpClient::GetFilename(const std::string& sURL)
-//{
-//	size_t uPos = sURL.find_last_of('/');
-//	if (uPos != std::string::npos && uPos != sURL.size() - 1)
-//		return sURL.substr(uPos + 1);
-//
-//	return std::optional<std::string>();
-//}
-//
-//bool HttpClient::SendRequest(const std::string& rServer, const std::string& rPath, boost::asio::ip::tcp::iostream& rStream)
-//{
-//	// Establish a connection to the server.
-//	m_sigInfoLog("Connect to " + rServer);
-//	rStream.connect(rServer, "http");
-//	if (!rStream)
-//	{
-//		m_sigErrorLog("Unable to connect: " + rStream.error().message());
-//		return false;
-//	}
-//
-//	// Send the request.
-//	m_sigInfoLog("Request paget " + rPath);
-//	rStream << "GET " << rPath << " HTTP/1.0\r\n";
-//	rStream << "Host: " << rServer << "\r\n";
-//	rStream << "Referer: " << rServer << "\r\n";
-//	rStream << "Accept: */*\r\n" << "Connection: close\r\n\r\n";
-//
-//	return true;
-//}
-//
-//size_t HttpClient::GetHttpHeader(boost::asio::ip::tcp::iostream& rStream)
-//{
-//	// Check that response is OK.
-//	std::string sHttpVersion;
-//	rStream >> sHttpVersion;
-//	unsigned int uCode;
-//	rStream >> uCode;
-//	std::string sMssage;
-//	std::getline(rStream, sMssage);
-//	m_sigInfoLog("Recive data: " + sHttpVersion + " / " + sMssage);
-//	if (!rStream || sHttpVersion.substr(0, 5) != "HTTP/")
-//	{
-//		m_sigErrorLog("Invalid response");
-//		return 0;
-//	}
-//
-//	if (uCode == 200 || uCode == 301 || uCode == 302)
-//	{
-//		// Process the response headers, which are terminated by a blank line.
-//		std::string sHeader;
-//		std::map<std::string, std::string> mHeader;
-//		size_t uSize = 1;
-//		while (std::getline(rStream, sHeader) && sHeader != "\r")
-//		{
-//			m_sigInfoLog(sHeader);
-//			size_t uPos = sHeader.find_first_of(':');
-//			if (uPos != std::string::npos)
-//			{
-//				std::string sKey = sHeader.substr(0, uPos);
-//				std::string sValue = sHeader.substr(uPos + 1);
-//				boost::trim(sKey);
-//				boost::trim(sValue);
-//				mHeader.insert(std::make_pair(sKey, sValue));
-//
-//				if (sKey == "Content-Length")
-//					uSize = std::atoi(sValue.c_str());
-//			}
-//		}
-////
-////		if (uCode == 301 || uCode == 302)
-//		{
-//			std::string sNewURL = mHeader["Location"];
-//			if (sNewURL == "")
-//				sNewURL = mHeader["location"];
-//
-//			if (sNewURL != "")
-//			{
-//				auto mURL = ParseURL(sNewURL);
-//				if (mURL)
-//				{
-//					rStream.close();
-//					if (SendRequest(mURL->first, mURL->second, rStream))
-//						return GetHttpHeader(rStream);
-//				}
-//			}
-//
-//			return 0;
-//		}
-//		return uSize;
-//	}
-//	else
-//	{
-//		m_sigErrorLog("Response returned with status code " + uCode);
-//		return 0;
-//	}
-//
-//}
-#pragma endregion
-
 HttpClientLite::Client::Client() : m_ctxSSL(ssl::context::sslv23_client)
 {
 	load_root_certificates(m_ctxSSL);
@@ -588,137 +416,42 @@ std::shared_ptr<Session> HttpClientLite::Client::Connect(const URL& rURL)
 	return nullptr;
 }
 
-std::optional<std::wstring> HttpClientLite::Client::ReadHtml_Http(const URL & rURL)
+std::optional<std::wstring> HttpClientLite::Client::ReadHtml(const URL & rURL, const std::string sDefaultCodePage)
 {
-	try
+	auto pSession = Connect(rURL);
+	if (pSession->Request())
 	{
-		using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-		namespace http = boost::beast::http;    // from <boost/beast/http.hpp>
+		auto res = pSession->Read();
+		if (res.result_int() / 100 == 3 ) // 300 redirect
+			return ReadHtml(URL(res[boost::beast::http::field::location].to_string()), sDefaultCodePage);
+		else if(res.result_int() == 200)
+			return pSession->GetBody(res, sDefaultCodePage);
 
-		// These objects perform our I/O
-		tcp::resolver mResolver{ m_ctxAaio };
-		tcp::socket mSocket{ m_ctxAaio };
-
-		// Look up the domain name
-		auto const results = mResolver.resolve(rURL.m_sHost, std::to_string(rURL.m_uPort) );
-
-		// Make the connection on the IP address we get from a lookup
-		boost::asio::connect(mSocket, results.begin(), results.end());
-
-		// Set up an HTTP GET request message
-		http::request<http::string_body> req{ http::verb::get, rURL.getTarget(), m_iHttpVersion };
-		req.set(http::field::host, rURL.m_sHost);
-		req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-
-		// Send the HTTP request to the remote host
-		http::write(mSocket, req);
-
-		// This buffer is used for reading and must be persisted
-		boost::beast::flat_buffer buffer;
-
-		// Declare a container to hold the response
-		http::response<http::string_body> res;
-
-		// Receive the HTTP response
-		http::read(mSocket, buffer, res);
-		std::cout << res.result_int() << ":" << res.result() << std::endl;
-		if (res.result_int() == 301)
-		{
-			std::cout << "To: " << res[boost::beast::http::field::location] << std::endl;
-			auto r = res[boost::beast::http::field::location];
-			std::string s(r.begin(), r.end());
-			std::cout << s;
-		}
-
-		// Write the message to standard out
-		std::cout << res << std::endl;
-
-		std::string x = res.body().data();
-
-		// Gracefully close the socket
-		boost::system::error_code ec;
-		mSocket.shutdown(tcp::socket::shutdown_both, ec);
-
-		// not_connected happens sometimes
-		// so don't bother reporting it.
-		//
-		if (ec && ec != boost::system::errc::not_connected)
-			throw boost::system::system_error{ ec };
-
-		// If we get here then the connection is closed gracefully
+		pSession->Close();
 	}
-	catch (std::exception const& e)
-	{
-		std::cerr << "Error: " << e.what() << std::endl;
-	}
+
 	return std::optional<std::wstring>();
 }
 
-std::optional<std::wstring> HttpClientLite::Client::ReadHtml_Https(const URL & rURL)
+bool HttpClientLite::Client::GetBinaryFile(const URL & rURL, const std::wstring & sFilename)
 {
-	try
+	return false;
+}
+
+Session::THttpResponse HttpClientLite::Client::ReadWithAuroRedirect(const URL & rURL)
+{
+	auto pSession = Connect(rURL);
+	if (pSession->Request())
 	{
-		using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-		namespace http = boost::beast::http;    // from <boost/beast/http.hpp>
+		auto res = pSession->Read();
+		if (res.result_int() == 200)
+			return res;
 
-				// These objects perform our I/O
-		tcp::resolver resolver{ m_ctxAaio };
-		ssl::stream<tcp::socket> stream{ m_ctxAaio, m_ctxSSL };
+		if (res.result_int() / 100 == 3) // 300 redirect
+			return ReadWithAuroRedirect(URL(res[boost::beast::http::field::location].to_string()));
 
-		// Set SNI Hostname (many hosts need this to handshake successfully)
-		if (!SSL_set_tlsext_host_name(stream.native_handle(), rURL.m_sHost.c_str()))
-		{
-			boost::system::error_code ec{ static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category() };
-			throw boost::system::system_error{ ec };
-		}
-
-		// Look up the domain name
-		auto const results = resolver.resolve(rURL.m_sHost, std::to_string(rURL.m_uPort));
-
-		// Make the connection on the IP address we get from a lookup
-		boost::asio::connect(stream.next_layer(), results.begin(), results.end());
-
-		// Perform the SSL handshake
-		stream.handshake(ssl::stream_base::client);
-
-		// Set up an HTTP GET request message
-		http::request<http::string_body> req{ http::verb::get, rURL.getTarget(), m_iHttpVersion };
-		req.set(http::field::host, rURL.m_sHost);
-		req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
-
-		// Send the HTTP request to the remote host
-		http::write(stream, req);
-
-		// This buffer is used for reading and must be persisted
-		boost::beast::flat_buffer buffer;
-
-		// Declare a container to hold the response
-		http::response<http::string_body> res;
-
-		// Receive the HTTP response
-		http::read(stream, buffer, res);
-
-		// Write the message to standard out
-		std::cout << res << std::endl;
-
-		// Gracefully close the stream
-		boost::system::error_code ec;
-		stream.shutdown(ec);
-		if (ec == boost::asio::error::eof)
-		{
-			// Rationale:
-			// http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error
-			ec.assign(0, ec.category());
-		}
-		if (ec)
-			throw boost::system::system_error{ ec };
-
-		// If we get here then the connection is closed gracefully
-	}
-	catch (std::exception const& e)
-	{
-		std::cerr << "Error: " << e.what() << std::endl;
+		pSession->Close();
 	}
 
-	return std::optional<std::wstring>();
+	return Session::THttpResponse();
 }

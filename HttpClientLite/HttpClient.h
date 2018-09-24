@@ -94,9 +94,20 @@ namespace HttpClientLite
 
 		std::shared_ptr<Session> Connect(const URL& rURL);
 
+		std::optional<std::wstring> ReadHtml(const URL& rURL, const std::string sDefaultCodePage = "us-ascii");
+		std::optional<std::wstring> ReadHtml(const std::string& sURL, const std::string sDefaultCodePage = "us-ascii")
+		{
+			return ReadHtml(URL(sURL),sDefaultCodePage);
+		}
+
+		bool GetBinaryFile(const URL& rURL, const std::wstring& sFilename);
+		bool GetBinaryFile(const std::string& sURL, const std::wstring& sFilename)
+		{
+			return GetBinaryFile(URL(sURL), sFilename);
+		}
+
 	protected:
-		std::optional<std::wstring> ReadHtml_Http(const URL& rURL);
-		std::optional<std::wstring> ReadHtml_Https(const URL& rURL);
+		Session::THttpResponse ReadWithAuroRedirect(const URL& rURL);
 
 	protected:
 		boost::asio::io_context		m_ctxAaio;
